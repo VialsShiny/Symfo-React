@@ -20,16 +20,19 @@ class AppFixtures extends Fixture
     {
         $usersData = [
             [
+                'id' => 1,
                 'email' => 'admin@test.com',
                 'roles' => ['ROLE_ADMIN'],
                 'plainPassword' => 'admin',
             ],
             [
+                'id' => 2,
                 'email' => 'user@test.com',
                 'roles' => ['ROLE_USER'],
                 'plainPassword' => 'user',
             ],
             [
+                'id' => 3,
                 'email' => 'alice@example.com',
                 'roles' => ['ROLE_USER'],
                 'plainPassword' => 'alice123',
@@ -38,6 +41,7 @@ class AppFixtures extends Fixture
 
         foreach ($usersData as $data) {
             $user = new User();
+            $user->setId($data['id']);
             $user->setEmail($data['email']);
             $user->setRoles($data['roles']);
 

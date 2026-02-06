@@ -14,8 +14,10 @@ class ArticleFixtures extends Fixture
         for ($i = 1; $i <= 10; $i++) {
             $article = new Article();
 
+            $article->setId($i);
             $article->setTitle("Article numéro $i");
             $article->setContent("Contenu de l'article $i. Lorem ipsum dolor sit amet.");
+            $article->setPrice(mt_rand(1000, 5000) / 100);
             $article->setPublishedAt(new DateTime());
             $article->setIsPublished(true);
 
