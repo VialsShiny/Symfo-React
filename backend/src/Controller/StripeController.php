@@ -47,7 +47,6 @@ final class StripeController extends AbstractController
 
         ]);
 
-
         // Redirigez l'utilisateur vers la page de paiement
         return $this->json($session->url);
     }
