@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import Loader from './../ui/Loader';
 import {fetchData} from './../utils/Fetch';
 
@@ -7,23 +7,60 @@ export default function Home() {
     const [loading, setLoading] = useState(null);
     const [error, setError] = useState(null);
 
+    useEffect(() => {
+        if (payUrl) {
+            console.log(payUrl);
+            // return (window.location.href = payUrl);
+        }
+    }, [payUrl]);
+
     async function HandleStripe() {
         setLoading(true);
-        const res = await fetchData('http://localhost/stripe/pay');
+        const res = await fetchData('http://localhost/stripe/pay', {
+            method: 'POST',
+            body: JSON.stringify({
+                cardProducts: [
+                    {
+                        id: 1,
+                    },
+                    {
+                        id: 2,
+                    },
+                    {
+                        id: 3,
+                    },
+                ],
+            }),
+        });
 
-        if (res) setLoading(false);
-        return setPayUrl(res);
+        if (res && !res.success) {
+            setLoading(false);
+            return setPayUrl(res);
+        }
+
+        if (!res?.success) {
+            setLoading(false);
+            console.log(res);
+
+            return setError(
+                `Une erreur s'est produite : ${res?.error?.message}`,
+            );
+        }
     }
 
     return (
-        <>
-            <button onClick={() => HandleStripe()}>Clique moi dessus !</button>
-
-            <br />
+        <div className="w-full min-h-screen flex flex-col justify-center items-center bg-grey-300">
+            <button
+                onClick={() => HandleStripe()}
+                className="bg-orange-400 p-3 rounded-xl ring-1 ring-black shadow-lg hover:-translate-y-2 transition-all duration-300 ease-in-out focus:bg-orange-500"
+            >
+                Clique moi dessus !
+            </button>
+            {error && (
+                <p className="text-red-700 text-md font-bold mt-3">{error}</p>
+            )}
 
             {loading && <Loader />}
-
-            <p>{payUrl}</p>
-        </>
+        </div>
     );
 }
