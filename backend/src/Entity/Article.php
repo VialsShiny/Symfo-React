@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ArticleRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -28,6 +30,17 @@ class Article
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $price = null;
+
+    /**
+     * @var Collection<int, LineItems>
+     */
+    #[ORM\OneToMany(targetEntity: LineItems::class, mappedBy: 'article')]
+    private Collection $lineItems;
+
+    public function __construct()
+    {
+        $this->lineItems = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -97,6 +110,36 @@ class Article
     public function setPrice(string $price): static
     {
         $this->price = $price;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, LineItems>
+     */
+    public function getLineItems(): Collection
+    {
+        return $this->lineItems;
+    }
+
+    public function addLineItem(LineItems $lineItem): static
+    {
+        if (!$this->lineItems->contains($lineItem)) {
+            $this->lineItems->add($lineItem);
+            $lineItem->setArticle($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLineItem(LineItems $lineItem): static
+    {
+        if ($this->lineItems->removeElement($lineItem)) {
+            // set the owning side to null (unless already changed)
+            if ($lineItem->getArticle() === $this) {
+                $lineItem->setArticle(null);
+            }
+        }
 
         return $this;
     }
