@@ -22,7 +22,7 @@ final class StripeController extends AbstractController
     public function index(Request $request)
     {
         $requestArray = $request->toArray();
-        $data = $requestArray['cardProducts'];
+        $data = $requestArray['cartProducts'];
 
         $productArray = $this->stripeService->getItemSession($data, Article::class);
 
