@@ -9,8 +9,7 @@ export default function Home() {
 
     useEffect(() => {
         if (payUrl) {
-            console.log(payUrl);
-            // return (window.location.href = payUrl);
+            return (window.location.href = payUrl);
         }
     }, [payUrl]);
 
@@ -22,12 +21,15 @@ export default function Home() {
                 cardProducts: [
                     {
                         id: 1,
+                        qt: 1000,
                     },
                     {
                         id: 2,
+                        qt: 2,
                     },
                     {
                         id: 3,
+                        qt: 1,
                     },
                 ],
             }),
