@@ -16,6 +16,11 @@ export const fetchData = async (url, options = {}) => {
         return await res.json();
     } catch (error) {
         throwError(error, 'Fetch error');
-        return null;
+        return [
+            {
+                succes: false,
+                error: {message: error},
+            },
+        ];
     }
 };
