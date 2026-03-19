@@ -1,14 +1,17 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Loader from './../ui/Loader';
-import {fetchData} from './../utils/Fetch';
+import { fetchData } from './../utils/Fetch';
 
 export default function Home() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [payUrl, setPayUrl] = useState(null);
     const [cart, setCart] = useState([]);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadingProduct, setLoadingProduct] = useState(false);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(false);
+    const [success, setSuccess] = useState(null);
     const [cartOpen, setCartOpen] = useState(false);
 
     useEffect(() => {
@@ -16,6 +19,20 @@ export default function Home() {
             window.location.href = payUrl;
         }
     }, [payUrl]);
+
+    useEffect(() => {
+        const sessionId = searchParams.get('session_id');
+        const status = searchParams.get('status');
+
+        if (sessionId) {
+            verifyPayment(sessionId);
+        }
+
+        if (status === 'cancel') {
+            setError('Paiement annulé.');
+            setSearchParams({}, { replace: true })
+        }
+    }, [searchParams]);
 
     // Auto-hide error after 5 seconds
     useEffect(() => {
@@ -25,6 +42,25 @@ export default function Home() {
         }
     }, [error]);
 
+    // Auto-hide success after 5 seconds
+    useEffect(() => {
+        if (success) {
+            const timer = setTimeout(() => setSuccess(null), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [success]);
+
+    const verifyPayment = async (sessionId) => {
+        const data = await fetchData(`http://localhost/stripe/verify-payment?session_id=${sessionId}`);
+
+        if (data.paid) {
+            setSuccess('Paiement effectuée !');
+        } else {
+            setError("Paiement non validé.");
+        }
+        setSearchParams({}, { replace: true })
+    };
+
     function handleCart(product) {
         setCart((prevCart) => {
             const existingProduct = prevCart.find(
@@ -33,11 +69,11 @@ export default function Home() {
 
             if (existingProduct) {
                 return prevCart.map((item) =>
-                    item.id === product.id ? {...item, qt: item.qt + 1} : item,
+                    item.id === product.id ? { ...item, qt: item.qt + 1 } : item,
                 );
             }
 
-            return [...prevCart, {id: product.id, qt: 1, ...product}];
+            return [...prevCart, { id: product.id, qt: 1, ...product }];
         });
     }
 
@@ -52,14 +88,13 @@ export default function Home() {
         }
         setCart((prevCart) =>
             prevCart.map((item) =>
-                item.id === productId ? {...item, qt} : item,
+                item.id === productId ? { ...item, qt } : item,
             ),
         );
     }
 
     async function getProducts() {
         setLoadingProduct(true);
-        setError(null);
 
         try {
             const res = await fetchData('http://localhost/articles');
@@ -89,13 +124,13 @@ export default function Home() {
         }
 
         setLoading(true);
-        setError(null);
 
         try {
             const res = await fetchData('http://localhost/stripe/pay', {
                 method: 'POST',
                 body: JSON.stringify({
                     cartProducts: cart,
+                    uri: window.location.href,
                 }),
             });
 
@@ -134,7 +169,7 @@ export default function Home() {
             {/* Error Toast */}
             {error && (
                 <div className="fixed top-6 right-6 z-[100] animate-slideInRight">
-                    <div className="bg-gradient-to-br from-red-500 to-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-start gap-3 max-w-md backdrop-blur-sm border border-red-400/20">
+                    <div className="bg-gradient-to-br from-red-500 to-red-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-md backdrop-blur-sm border border-red-400/20">
                         <svg
                             className="w-6 h-6 flex-shrink-0 mt-0.5"
                             fill="none"
@@ -153,6 +188,48 @@ export default function Home() {
                         </div>
                         <button
                             onClick={() => setError(null)}
+                            className="text-white/80 hover:text-white transition-colors"
+                        >
+                            <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Toast */}
+            {success && (
+                <div className="fixed top-6 right-6 z-[100] animate-slideInRight">
+                    <div className="bg-gradient-to-br from-green-500 to-emerald-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-md backdrop-blur-sm border border-green-400/20">
+                        <svg
+                            className="w-6 h-6 flex-shrink-0 mt-0.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                        <div className="flex-1">
+                            <p className="font-semibold text-sm">{success}</p>
+                        </div>
+                        <button
+                            onClick={() => setSuccess(null)}
                             className="text-white/80 hover:text-white transition-colors"
                         >
                             <svg
@@ -263,13 +340,12 @@ export default function Home() {
 
             {/* Floating Cart */}
             <div
-                className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
-                    cartOpen
-                        ? 'translate-x-0 opacity-100'
-                        : 'translate-x-[120%] opacity-0'
-                }`}
+                className={`fixed inset-x-0 bottom-0 md:inset-auto md:bottom-6 md:right-6 z-50 transition-all duration-300 ${cartOpen
+                    ? 'translate-y-0 md:translate-x-0 opacity-100'
+                    : 'translate-y-full md:translate-y-0 md:translate-x-[120%] opacity-0'
+                    }`}
             >
-                <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-96 max-h-[600px] flex flex-col overflow-hidden">
+                <div className="bg-white rounded-t-3xl md:rounded-3xl shadow-2xl border border-slate-200 w-full md:w-96 max-h-[85vh] md:max-h-[600px] flex flex-col overflow-hidden">
                     {/* Cart Header */}
                     <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -477,42 +553,6 @@ export default function Home() {
                     </span>
                 </button>
             )}
-
-            <style jsx>{`
-                @keyframes slideInRight {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-
-                .animate-slideInRight {
-                    animation: slideInRight 0.3s ease-out;
-                }
-
-                /* Custom scrollbar */
-                .overflow-y-auto::-webkit-scrollbar {
-                    width: 8px;
-                }
-
-                .overflow-y-auto::-webkit-scrollbar-track {
-                    background: #f1f5f9;
-                    border-radius: 10px;
-                }
-
-                .overflow-y-auto::-webkit-scrollbar-thumb {
-                    background: #cbd5e1;
-                    border-radius: 10px;
-                }
-
-                .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-                    background: #94a3b8;
-                }
-            `}</style>
         </>
     );
 }
