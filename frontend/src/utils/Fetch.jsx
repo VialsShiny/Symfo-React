@@ -19,7 +19,7 @@ export const fetchData = async (url, options = {}) => {
         return [
             {
                 succes: false,
-                error: {message: error},
+                error: { message: error },
             },
         ];
     }

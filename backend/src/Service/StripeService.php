@@ -9,6 +9,7 @@ use Stripe\Stripe;
 final class StripeService
 {
   private EntityManagerInterface $entityManagerInterface;
+  protected $stripeReturnUri;
 
   public function __construct(
     EntityManagerInterface $entityManagerInterface
@@ -21,12 +22,11 @@ final class StripeService
     Stripe::setApiKey($_ENV['STRIPE_SECRET_KEY']);
 
     $session = Session::create([
-      'payment_method_types' => ['card', 'paypal'],
+      'payment_method_types' => ['card'],
       'line_items' => $lineItems,
       'mode' => 'payment',
-      'success_url' => 'http://localhost/success',
-      'cancel_url' => 'http://localhost/cancel',
-
+      'success_url' => "$this->stripeReturnUri?session_id={CHECKOUT_SESSION_ID}",
+      'cancel_url' => "$this->stripeReturnUri?status=cancel",
     ]);
 
     return $session->url;
@@ -52,8 +52,9 @@ final class StripeService
     return $this->createSession($lineItems);
   }
 
-  public function getItemSession($data, $entity)
+  public function getItemSession($data, $entity, $uri)
   {
+    $this->stripeReturnUri = $uri;
     $itemArray = [];
     foreach ($data as $el) {
       $item = $this->entityManagerInterface->getRepository($entity)->find($el['id']);
